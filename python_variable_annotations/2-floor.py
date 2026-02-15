@@ -18,6 +18,3 @@ def floor(n: float) -> int:
         int: The largest integer less than or equal to n.
     """
     return math.floor(n)
-
-
-
