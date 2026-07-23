@@ -1,16 +1,56 @@
 const http = require('http');
+const fs = require('fs');
 
-// HTTP serverini yaradırıq
+function countStudents(path) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(path, 'utf8', (err, data) => {
+      if (err) {
+        reject(new Error('Cannot load the database'));
+        return;
+      }
+
+      const lines = data.split('\n').filter((line) => line.trim() !== '');
+      const rows = lines.slice(1); // başlıq sətrini (header) ötürürük
+
+      const fields = {};
+      const firstNames = {};
+
+      rows.forEach((row) => {
+        const [firstName, , , field] = row.split(',');
+        if (!fields[field]) {
+          fields[field] = 0;
+          firstNames[field] = [];
+        }
+        fields[field] += 1;
+        firstNames[field].push(firstName);
+      });
+
+      let output = `Number of students: ${rows.length}\n`;
+      Object.keys(fields).forEach((field) => {
+        output += `Number of students in ${field}: ${fields[field]}. List: ${firstNames[field].join(', ')}\n`;
+      });
+
+      resolve(output.trim());
+    });
+  });
+}
+
 const app = http.createServer((req, res) => {
-  // Cavabın status kodunu 200 (OK) və tipini plain text təyin edirik
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  
-  // Səhifənin gövdəsinə (body) mətni yazırıq və axını bağlayırıq
-  res.end('Hello Holberton School!');
+
+  if (req.url === '/') {
+    res.end('Hello Holberton School!');
+  } else if (req.url === '/students') {
+    countStudents(process.argv[2])
+      .then((report) => {
+        res.end(`This is the list of our students\n${report}`);
+      })
+      .catch((err) => {
+        res.end(`This is the list of our students\n${err.message}`);
+      });
+  }
 });
 
-// Serverin 1245-ci portu dinləməsini təmin edirik
 app.listen(1245);
 
-// "app" dəyişənini testlərin oxuya bilməsi üçün eksport edirik
 module.exports = app;
